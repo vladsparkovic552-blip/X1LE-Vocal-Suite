@@ -33,8 +33,8 @@ private:
     float gateEnvelope = 0.0f;
     std::array<float, 2> gateGain { 1.0f, 1.0f };
     std::array<std::vector<float>, 2> flangeBuffer, delayBuffer;
-    int flangeWrite = 0, delayWrite = 0;
-    double flangePhase = 0.0;
+    std::array<int, 2> flangeWrite { 0, 0 }, delayWrite { 0, 0 };
+    std::array<double, 2> flangePhase { 0.0, 0.0 };
     float currentLowCut = 85.0f;
     juce::dsp::Reverb reverb;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(X1LEAudioProcessor)

@@ -113,7 +113,10 @@ void X1LEAudioProcessorEditor::drawModuleIcon(juce::Graphics& g, juce::Rectangle
         p.lineTo(x + 25, y + 8); p.lineTo(x + 25, y + h - 8);
         p.lineTo(x + 15, cy + 5); p.lineTo(x + 7, cy + 5); p.closeSubPath();
         g.strokePath(p, juce::PathStrokeType(2.0f));
-        g.drawArc(x + 19, y + 7, 17, h - 14, -0.9f, 0.9f, true, 1.8f);
+        juce::Path soundWaves;
+        soundWaves.addCentredArc(x + 27.0f, cy, 8.0f, (h - 14.0f) * 0.5f,
+                                 0.0f, -0.9f, 0.9f, true);
+        g.strokePath(soundWaves, juce::PathStrokeType(1.8f));
     }
 }
 
@@ -158,8 +161,9 @@ void X1LEAudioProcessorEditor::paint(juce::Graphics& g) {
 
         g.setColour(text);
         g.setFont(juce::Font(juce::FontOptions(11.5f, juce::Font::bold)));
-        g.drawText(names[i], r.getX() + 60.0f, r.getY() + 13.0f, 125.0f, 20.0f,
-                   juce::Justification::centredLeft, true);
+        g.drawText(names[i], juce::Rectangle<int>(
+            static_cast<int>(r.getX() + 60.0f), static_cast<int>(r.getY() + 13.0f), 125, 20),
+            juce::Justification::centredLeft, true);
 
         g.setColour(muted);
         g.setFont(juce::Font(juce::FontOptions(10.0f)));

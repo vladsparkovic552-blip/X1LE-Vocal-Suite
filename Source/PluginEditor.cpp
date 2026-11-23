@@ -16,9 +16,9 @@ namespace {
 
 X1LEAudioProcessorEditor::X1LEAudioProcessorEditor(X1LEAudioProcessor& p)
     : AudioProcessorEditor(&p), audioProcessor(p) {
-    setSize(980, 650);
+    setSize(980, 820);
     setResizable(true, true);
-    setResizeLimits(820, 600, 1280, 850);
+    setResizeLimits(820, 790, 1280, 980);
 
     presetLabel.setText("VOCAL PRESET", juce::dontSendNotification);
     presetLabel.setColour(juce::Label::textColourId, muted);
@@ -40,7 +40,7 @@ X1LEAudioProcessorEditor::X1LEAudioProcessorEditor(X1LEAudioProcessor& p)
     presetBox.onChange = [this] { applyPreset(presetBox.getSelectedId()); };
     addAndMakeVisible(presetBox);
 
-    for (int i = 0; i < 9; ++i) {
+    for (int i = 0; i < 13; ++i) {
         auto& s = controls[i];
         s.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
         s.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 78, 20);

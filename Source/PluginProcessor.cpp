@@ -14,6 +14,10 @@ juce::AudioProcessorValueTreeState::ParameterLayout X1LEAudioProcessor::createPa
     };
     add("input","Input",-18.0f,18.0f,0.0f);
     add("gate","Gate",0.0f,1.0f,0.08f);
+    add("lowcut","Low Cut",60.0f,180.0f,85.0f);
+    add("flanger","Flanger",0.0f,1.0f,0.0f);
+    add("delay","Delay",0.0f,1.0f,0.0f);
+    add("reverb","Reverb",0.0f,1.0f,0.0f);
     add("presence","Presence",0.0f,12.0f,2.0f);
     add("air","Air",0.0f,12.0f,1.5f);
     add("comp","Comp",0.0f,1.0f,0.30f);
@@ -37,6 +41,13 @@ void X1LEAudioProcessor::prepareToPlay(double sr, int) {
         compEnvelope[c] = essEnvelope[c] = 0.0f;
     }
     gateEnvelope = 0.0f;
+    gateGain = { 1.0f, 1.0f };
+    flangeBuffer[0].assign(4096, 0.0f); flangeBuffer[1].assign(4096, 0.0f);
+    const auto delaySamples = static_cast<size_t>(sr * 0.7);
+    delayBuffer[0].assign(delaySamples, 0.0f); delayBuffer[1].assign(delaySamples, 0.0f);
+    flangeWrite = delayWrite = 0;
+    flangePhase = 0.0;
+    currentLowCut = 85.0f;
 }
 
 void X1LEAudioProcessor::releaseResources() {}
@@ -47,6 +58,15 @@ void X1LEAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::Mi
     const float inputGain = juce::Decibels::decibelsToGain(parameters.getRawParameterValue("input")->load());
     const float outputGain = juce::Decibels::decibelsToGain(parameters.getRawParameterValue("output")->load());
     const float gate = parameters.getRawParameterValue("gate")->load();
+    const float lowCut = parameters.getRawParameterValue("lowcut")->load();
+    const float flanger = parameters.getRawParameterValue("flanger")->load();
+    const float delay = parameters.getRawParameterValue("delay")->load();
+    const float reverbAmount = parameters.getRawParameterValue("reverb")->load();
+    if (std::abs(lowCut - currentLowCut) > 0.5f) {
+        for (int c = 0; c < 2; ++c)
+            highPass[c].coefficients = juce::dsp::IIR::Coefficients<float>::makeHighPass(getSampleRate(), lowCut);
+        currentLowCut = lowCut;
+    }
     const float comp = parameters.getRawParameterValue("comp")->load();
     const float drive = parameters.getRawParameterValue("drive")->load();
     const float mix = parameters.getRawParameterValue("mix")->load();
@@ -74,8 +94,8 @@ void X1LEAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::Mi
             const float level = std::abs(y);
             const float gateCoeff = level > gateEnvelope ? gateAttack : gateRelease;
             gateEnvelope = gateCoeff * gateEnvelope + (1.0f - gateCoeff) * level;
-            const float gateThreshold = 0.002f + gate * 0.035f;
-            const float gateTarget = gateEnvelope < gateThreshold ? (1.0f - gate * 0.72f) : 1.0f;
+            const float gateThreshold = 0.0012f + gate * 0.022f;
+            const float gateTarget = gateEnvelope < gateThreshold ? (1.0f - gate * 0.82f) : 1.0f;
 
             const float compCoeff = level > compEnvelope[c] ? compAttack : compRelease;
             compEnvelope[c] = compCoeff * compEnvelope[c] + (1.0f - compCoeff) * level;
@@ -102,15 +122,45 @@ void X1LEAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::Mi
                 y = y * (1.0f - drive * 0.32f) + driven * (drive * 0.32f);
             }
 
-            const float gateSmooth = juce::jlimit(0.0f, 1.0f, gateTarget);
-            y *= gateSmooth;
+            const float gateCoeff = gateTarget < gateGain[c]
+                ? std::exp(-1.0f / (0.012f * static_cast<float>(getSampleRate())))
+                : std::exp(-1.0f / (0.180f * static_cast<float>(getSampleRate())));
+            gateGain[c] = gateCoeff * gateGain[c] + (1.0f - gateCoeff) * gateTarget;
+            y *= gateGain[c];
+
+            const int fSize = static_cast<int>(flangeBuffer[c].size());
+            const float lfo = 0.5f + 0.5f * std::sin(static_cast<float>(flangePhase));
+            const int fDelay = juce::jlimit(1, fSize - 2, 80 + static_cast<int>(lfo * 300.0f));
+            const int fRead = (flangeWrite - fDelay + fSize) % fSize;
+            const float fSample = flangeBuffer[c][static_cast<size_t>(fRead)];
+            flangeBuffer[c][static_cast<size_t>(flangeWrite)] = y;
+            y += fSample * flanger * 0.38f;
+
+            const int dSize = static_cast<int>(delayBuffer[c].size());
+            const int dDelay = juce::jlimit(1, dSize - 2, static_cast<int>(getSampleRate() * 0.23));
+            const int dRead = (delayWrite - dDelay + dSize) % dSize;
+            const float dSample = delayBuffer[c][static_cast<size_t>(dRead)];
+            delayBuffer[c][static_cast<size_t>(delayWrite)] = y + dSample * 0.25f;
+            y += dSample * delay * 0.35f;
             const float wet = y;
             float result = (dry * (1.0f - mix) + wet * mix) * outputGain;
             const float magnitude = std::abs(result);
             if (magnitude > 0.97f)
                 result = std::copysign(0.97f + 0.03f * std::tanh((magnitude - 0.97f) * 8.0f), result);
             data[i] = result;
+            flangeWrite = (flangeWrite + 1) % static_cast<int>(flangeBuffer[c].size());
+            delayWrite = (delayWrite + 1) % static_cast<int>(delayBuffer[c].size());
+            flangePhase += 0.00022;
+            if (flangePhase > juce::MathConstants<double>::twoPi)
+                flangePhase -= juce::MathConstants<double>::twoPi;
         }
+    }
+    if (reverbAmount > 0.001f && buffer.getNumChannels() >= 2) {
+        juce::dsp::Reverb::Parameters rp;
+        rp.roomSize = 0.58f; rp.damping = 0.48f;
+        rp.wetLevel = reverbAmount * 0.30f; rp.dryLevel = 1.0f; rp.width = 1.0f;
+        reverb.setParameters(rp);
+        reverb.processStereo(buffer.getWritePointer(0), buffer.getWritePointer(1), buffer.getNumSamples());
     }
     for (int c = channels; c < buffer.getNumChannels(); ++c)
         buffer.clear(c, 0, buffer.getNumSamples());

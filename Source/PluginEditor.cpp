@@ -30,6 +30,9 @@ X1LEAudioProcessorEditor::X1LEAudioProcessorEditor(X1LEAudioProcessor& p)
     presetBox.addItem("Bright Pop", 4);
     presetBox.addItem("Airy Vocal", 5);
     presetBox.addItem("Hard Vocal", 6);
+    presetBox.addItem("Wide / Flanger", 7);
+    presetBox.addItem("Dreamy Space", 8);
+    presetBox.addItem("Warm Low Cut", 9);
     presetBox.setSelectedId(1, juce::dontSendNotification);
     presetBox.setColour(juce::ComboBox::backgroundColourId, panel2);
     presetBox.setColour(juce::ComboBox::textColourId, white);
@@ -63,21 +66,29 @@ X1LEAudioProcessorEditor::X1LEAudioProcessorEditor(X1LEAudioProcessor& p)
 }
 
 void X1LEAudioProcessorEditor::applyPreset(int preset) {
-    struct Values { float input, gate, comp, presence, air, deess, drive, mix, output; };
+    struct Values { float input, gate, comp, presence, air, deess, drive, mix, output, lowcut, flanger, delay, reverb; };
     static const Values presets[] = {
-        { 0.0f, 0.08f, 0.30f, 2.0f, 1.5f, 0.22f, 0.04f, 1.0f, 0.0f },
-        { -2.0f, 0.05f, 0.55f, 3.8f, 2.0f, 0.30f, 0.12f, 1.0f, -1.0f },
-        { -1.0f, 0.04f, 0.42f, 2.5f, 3.0f, 0.28f, 0.05f, 1.0f, -0.5f },
-        { -1.0f, 0.06f, 0.38f, 3.0f, 3.8f, 0.35f, 0.03f, 1.0f, -1.0f },
-        { -2.0f, 0.03f, 0.25f, 1.8f, 5.0f, 0.25f, 0.02f, 1.0f, -1.0f },
-        { -3.0f, 0.10f, 0.68f, 4.0f, 1.5f, 0.38f, 0.18f, 1.0f, -2.0f }
+        { 0.0f, 0.08f, 0.30f, 2.0f, 1.5f, 0.22f, 0.04f, 1.0f, 0.0f, 85.0f, 0.00f, 0.00f, 0.04f },
+        { -2.0f, 0.05f, 0.55f, 3.8f, 2.0f, 0.30f, 0.12f, 1.0f, -1.0f, 100.0f, 0.04f, 0.10f, 0.03f },
+        { -1.0f, 0.04f, 0.42f, 2.5f, 3.0f, 0.28f, 0.05f, 1.0f, -0.5f, 90.0f, 0.16f, 0.20f, 0.28f },
+        { -1.0f, 0.06f, 0.38f, 3.0f, 3.8f, 0.35f, 0.03f, 1.0f, -1.0f, 110.0f, 0.02f, 0.08f, 0.10f },
+        { -2.0f, 0.03f, 0.25f, 1.8f, 5.0f, 0.25f, 0.02f, 1.0f, -1.0f, 120.0f, 0.08f, 0.18f, 0.24f },
+        { -3.0f, 0.10f, 0.68f, 4.0f, 1.5f, 0.38f, 0.18f, 1.0f, -2.0f, 95.0f, 0.05f, 0.06f, 0.02f },
+        { -2.0f, 0.04f, 0.45f, 3.0f, 2.5f, 0.30f, 0.07f, 1.0f, -1.0f, 100.0f, 0.48f, 0.12f, 0.10f },
+        { -2.0f, 0.03f, 0.38f, 2.2f, 3.5f, 0.26f, 0.04f, 1.0f, -1.0f, 95.0f, 0.20f, 0.34f, 0.52f },
+        { -1.0f, 0.05f, 0.42f, 2.8f, 1.8f, 0.26f, 0.05f, 1.0f, -0.5f, 145.0f, 0.00f, 0.08f, 0.08f }
     };
-    const auto& v = presets[juce::jlimit(0, 5, preset - 1)];
+    const auto& v = presets[juce::jlimit(0, 8, preset - 1)];
     const float values[] = { v.input, v.gate, v.comp, v.presence, v.air, v.deess, v.drive, v.mix, v.output };
     for (int i = 0; i < 9; ++i) {
         if (auto* param = audioProcessor.parameters.getParameter(ids[i]))
             param->setValueNotifyingHost(param->convertTo0to1(values[i]));
     }
+    const char* fxIds[] = { "lowcut", "flanger", "delay", "reverb" };
+    const float fxValues[] = { v.lowcut, v.flanger, v.delay, v.reverb };
+    for (int i = 0; i < 4; ++i)
+        if (auto* param = audioProcessor.parameters.getParameter(fxIds[i]))
+            param->setValueNotifyingHost(param->convertTo0to1(fxValues[i]));
 }
 
 void X1LEAudioProcessorEditor::drawModuleIcon(juce::Graphics& g, juce::Rectangle<float> a, int index) {

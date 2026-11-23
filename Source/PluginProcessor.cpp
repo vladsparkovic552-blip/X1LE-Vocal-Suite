@@ -30,8 +30,8 @@ void X1LEAudioProcessor::prepareToPlay(double sr, int) {
         highPass[c].prepare(spec); presence[c].prepare(spec); airShelf[c].prepare(spec);
         essHighPass[c].prepare(spec); essLowPass[c].prepare(spec);
         highPass[c].coefficients = juce::dsp::IIR::Coefficients<float>::makeHighPass(sr, 75.0);
-        presence[c].coefficients = juce::dsp::IIR::Coefficients<float>::makePeakFilter(sr, 3200.0, 0.85f, 1.12f);
-        airShelf[c].coefficients = juce::dsp::IIR::Coefficients<float>::makeHighShelf(sr, 10500.0, 0.7f, 1.0f);
+        presence[c].coefficients = juce::dsp::IIR::Coefficients<float>::makePeakFilter(sr, 3200.0, 0.85f, 1.65f);
+        airShelf[c].coefficients = juce::dsp::IIR::Coefficients<float>::makeHighShelf(sr, 10500.0, 0.7f, 1.8f);
         essHighPass[c].coefficients = juce::dsp::IIR::Coefficients<float>::makeHighPass(sr, 5600.0);
         essLowPass[c].coefficients = juce::dsp::IIR::Coefficients<float>::makeLowPass(sr, 10500.0);
         compEnvelope[c] = essEnvelope[c] = 0.0f;
@@ -66,13 +66,10 @@ void X1LEAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::Mi
         for (int i = 0; i < buffer.getNumSamples(); ++i) {
             const float dry = data[i];
             float y = highPass[c].processSample(dry * inputGain);
-            y = presence[c].processSample(y);
-            const float presenceGain = juce::Decibels::decibelsToGain(presenceAmount * 0.22f);
-            const float airGain = juce::Decibels::decibelsToGain(airAmount * 0.18f);
-            y *= 1.0f + (presenceGain - 1.0f) * 0.45f;
-            airShelf[c].coefficients = juce::dsp::IIR::Coefficients<float>::makeHighShelf(
-                getSampleRate(), 10500.0, 0.7f, airGain);
-            y = airShelf[c].processSample(y);
+            const float presenceProcessed = presence[c].processSample(y);
+            y += (presenceProcessed - y) * (presenceAmount / 12.0f) * 0.70f;
+            const float airProcessed = airShelf[c].processSample(y);
+            y += (airProcessed - y) * (airAmount / 12.0f) * 0.55f;
 
             const float level = std::abs(y);
             const float gateCoeff = level > gateEnvelope ? gateAttack : gateRelease;

@@ -36,5 +36,6 @@ private:
     int flangeWrite = 0, delayWrite = 0;
     double flangePhase = 0.0;
     float currentLowCut = 85.0f;
+    juce::dsp::Reverb reverb;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(X1LEAudioProcessor)
 };

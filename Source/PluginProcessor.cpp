@@ -48,6 +48,7 @@ void X1LEAudioProcessor::prepareToPlay(double sr, int) {
     flangeWrite = delayWrite = 0;
     flangePhase = 0.0;
     currentLowCut = 85.0f;
+    reverb.prepare(spec);
     reverb.reset();
 }
 
@@ -161,7 +162,9 @@ void X1LEAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::Mi
         rp.roomSize = 0.58f; rp.damping = 0.48f;
         rp.wetLevel = reverbAmount * 0.30f; rp.dryLevel = 1.0f; rp.width = 1.0f;
         reverb.setParameters(rp);
-        reverb.processStereo(buffer.getWritePointer(0), buffer.getWritePointer(1), buffer.getNumSamples());
+        juce::dsp::AudioBlock<float> reverbBlock(buffer);
+        juce::dsp::ProcessContextReplacing<float> reverbContext(reverbBlock);
+        reverb.process(reverbContext);
     }
     for (int c = channels; c < buffer.getNumChannels(); ++c)
         buffer.clear(c, 0, buffer.getNumSamples());

@@ -31,6 +31,5 @@ private:
     };
     void applyPreset(int preset);
     void drawModuleIcon(juce::Graphics&, juce::Rectangle<float>, int);
-    juce::Rectangle<float> fxBounds(int index, int width);
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(X1LEAudioProcessorEditor)
 };

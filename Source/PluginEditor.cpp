@@ -1,188 +1,149 @@
 #include "PluginEditor.h"
 
 namespace {
-    const juce::Colour bg       (0xff090b12);
-    const juce::Colour panel    (0xff121725);
-    const juce::Colour panelTop (0xff192033);
-    const juce::Colour border  (0xff29334b);
-    const juce::Colour purple  (0xff9a70ff);
-    const juce::Colour cyan    (0xff55d7f2);
-    const juce::Colour text    (0xfff2f4ff);
-    const juce::Colour muted   (0xff9ba7bf);
+    const juce::Colour bg(0xff070912), panel(0xff101728), panel2(0xff151f33);
+    const juce::Colour border(0xff283a59), purple(0xffa66bff), cyan(0xff43e5ff);
+    const juce::Colour white(0xfff3f6ff), muted(0xff8796b3);
 
     juce::Rectangle<float> moduleBounds(int index, int width) {
-        const float margin = 24.0f;
-        const float gap = 14.0f;
+        const float margin = 24.0f, gap = 14.0f;
         const float cardW = (static_cast<float>(width) - margin * 2.0f - gap * 2.0f) / 3.0f;
-        const float cardH = 145.0f;
-        const float x = margin + (index % 3) * (cardW + gap);
-        const float y = 112.0f + (index / 3) * (cardH + 13.0f);
-        return { x, y, cardW, cardH };
+        const float cardH = 148.0f;
+        return { margin + (index % 3) * (cardW + gap),
+                 132.0f + (index / 3) * (cardH + 13.0f), cardW, cardH };
     }
 }
 
 X1LEAudioProcessorEditor::X1LEAudioProcessorEditor(X1LEAudioProcessor& p)
     : AudioProcessorEditor(&p), audioProcessor(p) {
-    setSize(920, 610);
+    setSize(980, 650);
     setResizable(true, true);
-    setResizeLimits(760, 560, 1200, 820);
+    setResizeLimits(820, 600, 1280, 850);
+
+    presetLabel.setText("VOCAL PRESET", juce::dontSendNotification);
+    presetLabel.setColour(juce::Label::textColourId, muted);
+    presetLabel.setFont(juce::Font(juce::FontOptions(10.0f, juce::Font::bold)));
+    addAndMakeVisible(presetLabel);
+    presetBox.addItem("Clean Studio", 1);
+    presetBox.addItem("Modern Rap", 2);
+    presetBox.addItem("Melodic Vocal", 3);
+    presetBox.addItem("Bright Pop", 4);
+    presetBox.addItem("Airy Vocal", 5);
+    presetBox.addItem("Hard Vocal", 6);
+    presetBox.setSelectedId(1, juce::dontSendNotification);
+    presetBox.setColour(juce::ComboBox::backgroundColourId, panel2);
+    presetBox.setColour(juce::ComboBox::textColourId, white);
+    presetBox.setColour(juce::ComboBox::outlineColourId, border);
+    presetBox.onChange = [this] { applyPreset(presetBox.getSelectedId()); };
+    addAndMakeVisible(presetBox);
 
     for (int i = 0; i < 9; ++i) {
-        auto& slider = controls[i];
-        slider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-        slider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 76, 19);
-        slider.setRotaryParameters(juce::MathConstants<float>::pi * 1.25f,
-                                   juce::MathConstants<float>::pi * 2.75f, true);
-        slider.setNumDecimalPlacesToDisplay(1);
-        slider.setColour(juce::Slider::rotarySliderFillColourId, purple);
-        slider.setColour(juce::Slider::rotarySliderOutlineColourId, juce::Colour(0xff303b55));
-        slider.setColour(juce::Slider::thumbColourId, cyan);
-        slider.setColour(juce::Slider::textBoxTextColourId, text);
-        slider.setColour(juce::Slider::textBoxBackgroundColourId, juce::Colour(0xff0d1220));
-        slider.setColour(juce::Slider::textBoxOutlineColourId, juce::Colour(0x00000000));
-        slider.setColour(juce::Slider::textBoxHighlightColourId, purple);
-        slider.setTooltip(juce::String(names[i]) + ": " + descriptions[i]);
-        addAndMakeVisible(slider);
-        attachments[i] = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
-            p.parameters, ids[i], slider);
+        auto& s = controls[i];
+        s.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+        s.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 78, 20);
+        s.setRotaryParameters(juce::MathConstants<float>::pi * 1.25f,
+                              juce::MathConstants<float>::pi * 2.75f, true);
+        s.setNumDecimalPlacesToDisplay(1);
+        s.setColour(juce::Slider::rotarySliderFillColourId, i % 2 == 0 ? purple : cyan);
+        s.setColour(juce::Slider::rotarySliderOutlineColourId, border);
+        s.setColour(juce::Slider::thumbColourId, white);
+        s.setColour(juce::Slider::textBoxTextColourId, white);
+        s.setColour(juce::Slider::textBoxBackgroundColourId, bg);
+        s.setColour(juce::Slider::textBoxOutlineColourId, juce::Colours::transparentBlack);
+        s.setColour(juce::Slider::textBoxHighlightColourId, purple);
+        s.setTooltip(juce::String(names[i]) + ": " + descriptions[i]);
+        addAndMakeVisible(s);
+        attachments[i] = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(p.parameters, ids[i], s);
     }
-
-    controls[0].setTextValueSuffix(" dB");
-    controls[3].setTextValueSuffix(" dB");
-    controls[4].setTextValueSuffix(" dB");
-    controls[8].setTextValueSuffix(" dB");
-    for (int index : { 1, 2, 5, 6, 7 }) {
-        controls[index].textFromValueFunction = [](double value) {
-            return juce::String(juce::roundToInt(value * 100.0)) + " %";
-        };
-        controls[index].valueFromTextFunction = [](const juce::String& value) {
-            return value.getFloatValue() / 100.0;
-        };
+    for (int i : { 0, 3, 4, 8 }) controls[i].setTextValueSuffix(" dB");
+    for (int i : { 1, 2, 5, 6, 7 }) {
+        controls[i].textFromValueFunction = [](double v) { return juce::String(juce::roundToInt(v * 100.0)) + " %"; };
+        controls[i].valueFromTextFunction = [](const juce::String& v) { return v.getFloatValue() / 100.0; };
     }
 }
 
-void X1LEAudioProcessorEditor::drawModuleIcon(juce::Graphics& g, juce::Rectangle<float> area, int index) {
-    const auto c = (index % 2 == 0) ? purple : cyan;
-    g.setColour(c.withAlpha(0.13f));
-    g.fillRoundedRectangle(area, 9.0f);
-    g.setColour(c);
-    const float x = area.getX(), y = area.getY(), w = area.getWidth(), h = area.getHeight();
-    const float cx = area.getCentreX(), cy = area.getCentreY();
+void X1LEAudioProcessorEditor::applyPreset(int preset) {
+    struct Values { float input, gate, comp, presence, air, deess, drive, mix, output; };
+    static const Values presets[] = {
+        { 0.0f, 0.08f, 0.30f, 2.0f, 1.5f, 0.22f, 0.04f, 1.0f, 0.0f },
+        { -2.0f, 0.05f, 0.55f, 3.8f, 2.0f, 0.30f, 0.12f, 1.0f, -1.0f },
+        { -1.0f, 0.04f, 0.42f, 2.5f, 3.0f, 0.28f, 0.05f, 1.0f, -0.5f },
+        { -1.0f, 0.06f, 0.38f, 3.0f, 3.8f, 0.35f, 0.03f, 1.0f, -1.0f },
+        { -2.0f, 0.03f, 0.25f, 1.8f, 5.0f, 0.25f, 0.02f, 1.0f, -1.0f },
+        { -3.0f, 0.10f, 0.68f, 4.0f, 1.5f, 0.38f, 0.18f, 1.0f, -2.0f }
+    };
+    const auto& v = presets[juce::jlimit(0, 5, preset - 1)];
+    const float values[] = { v.input, v.gate, v.comp, v.presence, v.air, v.deess, v.drive, v.mix, v.output };
+    for (int i = 0; i < 9; ++i) {
+        if (auto* param = audioProcessor.parameters.getParameter(ids[i]))
+            param->setValueNotifyingHost(param->convertTo0to1(values[i]));
+    }
+}
 
-    if (index == 0) { // Input: waveform
-        juce::Path p;
-        p.startNewSubPath(x + 5, cy);
-        p.lineTo(x + 10, cy - 5); p.lineTo(x + 14, cy + 6);
-        p.lineTo(x + 19, cy - 9); p.lineTo(x + 24, cy + 3);
-        p.lineTo(x + 29, cy);
+void X1LEAudioProcessorEditor::drawModuleIcon(juce::Graphics& g, juce::Rectangle<float> a, int index) {
+    const auto c = index % 2 == 0 ? purple : cyan;
+    g.setColour(c.withAlpha(0.12f)); g.fillRoundedRectangle(a, 10.0f);
+    g.setColour(c);
+    const float x=a.getX(), y=a.getY(), w=a.getWidth(), h=a.getHeight(), cx=a.getCentreX(), cy=a.getCentreY();
+    if (index == 0 || index == 2 || index == 4) {
+        juce::Path p; p.startNewSubPath(x+5,cy);
+        for (int n=0;n<5;++n) p.lineTo(x+8+n*5, cy + ((n%2)==0 ? -8.0f : 8.0f));
+        p.lineTo(x+w-4,cy);
         g.strokePath(p, juce::PathStrokeType(2.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
-    } else if (index == 1) { // Gate
-        g.drawRoundedRectangle(x + 7, y + 7, w - 14, h - 14, 4.0f, 2.0f);
-        g.drawLine(cx, y + 8, cx, y + h - 8, 2.0f);
-    } else if (index == 2) { // Compressor
-        g.drawLine(x + 8, y + h - 8, x + 8, y + 8, 1.5f);
-        g.drawLine(x + 8, y + h - 8, x + w - 7, y + h - 8, 1.5f);
-        juce::Path p; p.startNewSubPath(x + 11, y + h - 12);
-        p.lineTo(cx - 2, cy + 1); p.lineTo(x + w - 9, y + 11);
-        g.strokePath(p, juce::PathStrokeType(2.2f));
-    } else if (index == 3) { // Presence / focus
-        juce::Path p; p.startNewSubPath(cx, y + 6); p.lineTo(cx + 3, cy - 3);
-        p.lineTo(x + w - 6, cy); p.lineTo(cx + 3, cy + 3);
-        p.lineTo(cx, y + h - 6); p.lineTo(cx - 3, cy + 3);
-        p.lineTo(x + 6, cy); p.lineTo(cx - 3, cy - 3); p.closeSubPath();
-        g.fillPath(p);
-    } else if (index == 4) { // Air: breeze
-        for (int k = 0; k < 3; ++k) {
-            juce::Path p; const float yy = y + 10 + k * 8.0f;
-            p.startNewSubPath(x + 7, yy); p.cubicTo(x + 14, yy - 5, x + 22, yy + 5, x + 29, yy);
-            g.strokePath(p, juce::PathStrokeType(1.8f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
-        }
-    } else if (index == 5) { // De-esser
-        g.setFont(juce::Font(juce::FontOptions(20.0f, juce::Font::bold)));
-        g.drawText("S", area.toNearestInt(), juce::Justification::centred, false);
-    } else if (index == 6) { // Drive: bolt
-        juce::Path p; p.startNewSubPath(cx + 2, y + 5); p.lineTo(x + 10, cy + 2);
-        p.lineTo(cx - 1, cy + 2); p.lineTo(cx - 3, y + h - 5);
-        p.lineTo(x + w - 9, cy - 4); p.lineTo(cx + 2, cy - 4); p.closeSubPath();
-        g.fillPath(p);
-    } else if (index == 7) { // Mix
-        g.drawEllipse(x + 6, y + 9, 17, 17, 2.0f);
-        g.drawEllipse(x + 15, y + 9, 17, 17, 2.0f);
-    } else { // Output
-        juce::Path p; p.startNewSubPath(x + 7, cy - 5); p.lineTo(x + 15, cy - 5);
-        p.lineTo(x + 25, y + 8); p.lineTo(x + 25, y + h - 8);
-        p.lineTo(x + 15, cy + 5); p.lineTo(x + 7, cy + 5); p.closeSubPath();
-        g.strokePath(p, juce::PathStrokeType(2.0f));
-        juce::Path soundWaves;
-        soundWaves.addCentredArc(x + 27.0f, cy, 8.0f, (h - 14.0f) * 0.5f,
-                                 0.0f, -0.9f, 0.9f, true);
-        g.strokePath(soundWaves, juce::PathStrokeType(1.8f));
+    } else if (index == 1 || index == 5) {
+        g.drawRoundedRectangle(x+7,y+7,w-14,h-14,5.0f,2.0f);
+        g.drawLine(cx,y+8,cx,y+h-8,2.0f);
+    } else if (index == 3 || index == 6) {
+        juce::Path p; p.startNewSubPath(cx,y+5); p.lineTo(cx+4,cy-3); p.lineTo(x+w-5,cy);
+        p.lineTo(cx+3,cy+3); p.lineTo(cx,y+h-5); p.lineTo(cx-3,cy+3);
+        p.lineTo(x+5,cy); p.closeSubPath(); g.strokePath(p,juce::PathStrokeType(2.0f));
+    } else {
+        g.drawEllipse(x+5,y+7,w-10,h-14,2.0f);
+        g.drawLine(x+9,cy,x+w-9,cy,2.0f);
     }
 }
 
 void X1LEAudioProcessorEditor::paint(juce::Graphics& g) {
     g.fillAll(bg);
+    juce::ColourGradient background(juce::Colour(0xff1a1640),0,0,juce::Colour(0xff09101c),getWidth(),getHeight(),false);
+    g.setGradientFill(background); g.fillRect(getLocalBounds());
+    g.setColour(purple.withAlpha(0.12f)); g.fillEllipse(getWidth()-280.0f,-170.0f,420.0f,420.0f);
+    g.setColour(cyan.withAlpha(0.07f)); g.fillEllipse(-180.0f,350.0f,380.0f,380.0f);
 
-    // Header background and accent
-    g.setGradientFill(juce::ColourGradient(juce::Colour(0xff1a2035), 0.0f, 0.0f,
-                                           juce::Colour(0xff101522), 0.0f, 100.0f, false));
-    g.fillRoundedRectangle(18.0f, 16.0f, getWidth() - 36.0f, 82.0f, 16.0f);
-    g.setColour(purple);
-    g.fillRoundedRectangle(18.0f, 16.0f, 4.0f, 82.0f, 2.0f);
+    g.setColour(panel.withAlpha(0.96f)); g.fillRoundedRectangle(18.0f,16.0f,getWidth()-36.0f,100.0f,18.0f);
+    g.setColour(purple); g.fillRoundedRectangle(18.0f,16.0f,4.0f,100.0f,2.0f);
+    g.setColour(white); g.setFont(juce::Font(juce::FontOptions(28.0f,juce::Font::bold)));
+    g.drawText("X1LE",38,28,95,34,juce::Justification::centredLeft);
+    g.setColour(cyan); g.drawText("VOCAL SUITE",132,30,220,30,juce::Justification::centredLeft);
+    g.setColour(muted); g.setFont(juce::Font(juce::FontOptions(10.5f,juce::Font::bold)));
+    g.drawText("NEURAL-INSPIRED VOCAL COLOR  /  REAL-TIME CHAIN",40,70,380,18,juce::Justification::centredLeft);
+    g.setColour(cyan.withAlpha(0.14f)); g.fillRoundedRectangle(getWidth()-190.0f,42.0f,148.0f,30.0f,10.0f);
+    g.setColour(cyan); g.fillEllipse(getWidth()-176.0f,53.0f,8.0f,8.0f);
+    g.setColour(white); g.setFont(juce::Font(juce::FontOptions(10.0f,juce::Font::bold)));
+    g.drawText("AUDIO ENGINE ON",getWidth()-162,48,112,18,juce::Justification::centredLeft);
 
-    g.setColour(text);
-    g.setFont(juce::Font(juce::FontOptions(25.0f, juce::Font::bold)));
-    g.drawText("X1LE", 38, 27, 86, 34, juce::Justification::centredLeft);
-    g.setColour(purple);
-    g.drawText("VOCAL SUITE", 119, 29, 190, 30, juce::Justification::centredLeft);
-    g.setColour(muted);
-    g.setFont(juce::Font(juce::FontOptions(11.0f)));
-    g.drawText("VOCAL CHAIN  /  REAL-TIME PROCESSING", 40, 62, 350, 18, juce::Justification::centredLeft);
-
-    // Status chip
-    g.setColour(juce::Colour(0xff172d32));
-    g.fillRoundedRectangle(getWidth() - 184.0f, 42.0f, 142.0f, 28.0f, 9.0f);
-    g.setColour(cyan);
-    g.fillEllipse(getWidth() - 169.0f, 52.0f, 8.0f, 8.0f);
-    g.setFont(juce::Font(juce::FontOptions(10.0f, juce::Font::bold)));
-    g.drawText("PLUGIN ACTIVE", getWidth() - 154, 46, 104, 18, juce::Justification::centredLeft);
-
-    // Module cards
-    for (int i = 0; i < 9; ++i) {
-        auto r = moduleBounds(i, getWidth());
-        g.setColour(panel);
-        g.fillRoundedRectangle(r, 13.0f);
-        g.setColour(border);
-        g.drawRoundedRectangle(r, 13.0f, 1.0f);
-        g.setColour((i % 2 == 0) ? purple.withAlpha(0.8f) : cyan.withAlpha(0.8f));
-        g.fillRoundedRectangle(r.getX() + 1.0f, r.getY() + 14.0f, 3.0f, 36.0f, 1.5f);
-
-        drawModuleIcon(g, { r.getX() + 15.0f, r.getY() + 14.0f, 36.0f, 36.0f }, i);
-
-        g.setColour(text);
-        g.setFont(juce::Font(juce::FontOptions(11.5f, juce::Font::bold)));
-        g.drawText(names[i], juce::Rectangle<int>(
-            static_cast<int>(r.getX() + 60.0f), static_cast<int>(r.getY() + 13.0f), 125, 20),
-            juce::Justification::centredLeft, true);
-
-        g.setColour(muted);
-        g.setFont(juce::Font(juce::FontOptions(10.0f)));
-        g.drawFittedText(descriptions[i], juce::Rectangle<int>(
-            static_cast<int>(r.getX() + 16), static_cast<int>(r.getY() + 59),
-            132, 72), juce::Justification::topLeft, 4, 1.0f);
+    for (int i=0;i<9;++i) {
+        auto r=moduleBounds(i,getWidth());
+        g.setColour(panel.withAlpha(0.98f)); g.fillRoundedRectangle(r,15.0f);
+        g.setColour(border); g.drawRoundedRectangle(r,15.0f,1.0f);
+        g.setColour((i%2==0?purple:cyan).withAlpha(0.9f));
+        g.fillRoundedRectangle(r.getX()+1,r.getY()+15,3,38,1.5f);
+        drawModuleIcon(g,{r.getX()+15,r.getY()+15,36,36},i);
+        g.setColour(white); g.setFont(juce::Font(juce::FontOptions(11.0f,juce::Font::bold)));
+        g.drawText(names[i],juce::Rectangle<int>((int)r.getX()+60,(int)r.getY()+17,132,20),juce::Justification::centredLeft,true);
+        g.setColour(muted); g.setFont(juce::Font(juce::FontOptions(9.5f)));
+        g.drawFittedText(descriptions[i],juce::Rectangle<int>((int)r.getX()+15,(int)r.getY()+65,132,70),juce::Justification::topLeft,4,1.0f);
     }
-
-    // Footer
-    g.setColour(muted);
-    g.setFont(juce::Font(juce::FontOptions(10.0f)));
-    g.drawText("TIP: начинайте с INPUT и GATE, затем настройте COMP и TONE. Сравнивайте результат с исходным сигналом.",
-               25, getHeight() - 25, getWidth() - 50, 16, juce::Justification::centredLeft);
+    g.setColour(muted); g.setFont(juce::Font(juce::FontOptions(10.0f)));
+    g.drawText("START WITH A PRESET, THEN ADJUST BY EAR. KEEP INPUT AND OUTPUT LEVELS UNDER CONTROL.",
+               25,getHeight()-25,getWidth()-50,16,juce::Justification::centredLeft);
 }
 
 void X1LEAudioProcessorEditor::resized() {
-    for (int i = 0; i < 9; ++i) {
-        const auto r = moduleBounds(i, getWidth());
-        controls[i].setBounds(static_cast<int>(r.getRight() - 124.0f),
-                              static_cast<int>(r.getY() + 22.0f), 112, 116);
+    presetLabel.setBounds(440,34,105,18);
+    presetBox.setBounds(440,55,190,30);
+    for (int i=0;i<9;++i) {
+        const auto r=moduleBounds(i,getWidth());
+        controls[i].setBounds((int)(r.getRight()-126.0f),(int)(r.getY()+24.0f),114,116);
     }
 }

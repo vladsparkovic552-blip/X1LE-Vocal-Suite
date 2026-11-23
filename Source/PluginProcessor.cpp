@@ -18,6 +18,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout X1LEAudioProcessor::createPa
     add("flanger","Flanger",0.0f,1.0f,0.0f);
     add("delay","Delay",0.0f,1.0f,0.0f);
     add("reverb","Reverb",0.0f,1.0f,0.0f);
+    add("width","Stereo Width",0.0f,1.0f,0.5f);
     add("presence","Presence",0.0f,12.0f,2.0f);
     add("air","Air",0.0f,12.0f,1.5f);
     add("comp","Comp",0.0f,1.0f,0.30f);
@@ -65,6 +66,7 @@ void X1LEAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::Mi
     const float flanger = parameters.getRawParameterValue("flanger")->load();
     const float delay = parameters.getRawParameterValue("delay")->load();
     const float reverbAmount = parameters.getRawParameterValue("reverb")->load();
+    const float stereoWidth = parameters.getRawParameterValue("width")->load();
     if (std::abs(lowCut - currentLowCut) > 0.5f) {
         for (int c = 0; c < 2; ++c)
             highPass[c].coefficients = juce::dsp::IIR::Coefficients<float>::makeHighPass(getSampleRate(), lowCut);
@@ -166,6 +168,17 @@ void X1LEAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::Mi
         juce::dsp::AudioBlock<float> reverbBlock(buffer);
         juce::dsp::ProcessContextReplacing<float> reverbContext(reverbBlock);
         reverb.process(reverbContext);
+    }
+    if (channels >= 2 && std::abs(stereoWidth - 0.5f) > 0.001f) {
+        auto* left = buffer.getWritePointer(0);
+        auto* right = buffer.getWritePointer(1);
+        const float sideGain = stereoWidth * 2.0f;
+        for (int i = 0; i < buffer.getNumSamples(); ++i) {
+            const float mid = 0.5f * (left[i] + right[i]);
+            const float side = 0.5f * (left[i] - right[i]) * sideGain;
+            left[i] = mid + side;
+            right[i] = mid - side;
+        }
     }
     for (int c = channels; c < buffer.getNumChannels(); ++c)
         buffer.clear(c, 0, buffer.getNumSamples());

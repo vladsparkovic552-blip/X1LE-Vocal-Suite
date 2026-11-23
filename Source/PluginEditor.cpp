@@ -15,7 +15,7 @@ namespace {
 
     juce::Rectangle<float> fxBounds(int index, int width) {
         const float margin = 24.0f, gap = 14.0f;
-        const float cardW = (static_cast<float>(width) - margin * 2.0f - gap * 3.0f) / 4.0f;
+        const float cardW = (static_cast<float>(width) - margin * 2.0f - gap * 4.0f) / 5.0f;
         return { margin + index * (cardW + gap), 622.0f, cardW, 148.0f };
     }
 }
@@ -30,15 +30,17 @@ X1LEAudioProcessorEditor::X1LEAudioProcessorEditor(X1LEAudioProcessor& p)
     presetLabel.setColour(juce::Label::textColourId, muted);
     presetLabel.setFont(juce::Font(juce::FontOptions(10.0f, juce::Font::bold)));
     addAndMakeVisible(presetLabel);
-    presetBox.addItem("Clean Studio", 1);
-    presetBox.addItem("Modern Rap", 2);
-    presetBox.addItem("Melodic Vocal", 3);
-    presetBox.addItem("Bright Pop", 4);
-    presetBox.addItem("Airy Vocal", 5);
-    presetBox.addItem("Hard Vocal", 6);
-    presetBox.addItem("Wide / Flanger", 7);
-    presetBox.addItem("Dreamy Space", 8);
-    presetBox.addItem("Warm Low Cut", 9);
+    const char* presetNames[] = {
+        "Clean Studio", "Modern Rap Tight", "Melodic Lead", "Bright Hyperpop",
+        "Airy Cloud", "Hard Trap", "Wide Chorus", "Dream Space", "Warm Low Cut",
+        "ARLEKIN // Cold Trap", "ARLEKIN // Dark Lead", "ARLEKIN // Wide Adlibs",
+        "MAPT0V // Melodic Hyperpop", "MAPT0V // Bright Lead", "MAPT0V // Soft Air",
+        "Underground // Grit", "Underground // Saturated", "Jerk // Wide",
+        "Cloud Rap // Floating", "Lo-Fi Color", "Doubled Adlibs", "Dry Front Vocal",
+        "Long Reverb Tail", "Vocal Bus Glue"
+    };
+    for (int i = 0; i < 24; ++i)
+        presetBox.addItem(presetNames[i], i + 1);
     presetBox.setSelectedId(1, juce::dontSendNotification);
     presetBox.setColour(juce::ComboBox::backgroundColourId, panel2);
     presetBox.setColour(juce::ComboBox::textColourId, white);
@@ -46,7 +48,7 @@ X1LEAudioProcessorEditor::X1LEAudioProcessorEditor(X1LEAudioProcessor& p)
     presetBox.onChange = [this] { applyPreset(presetBox.getSelectedId()); };
     addAndMakeVisible(presetBox);
 
-    for (int i = 0; i < 13; ++i) {
+    for (int i = 0; i < 14; ++i) {
         auto& s = controls[i];
         s.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
         s.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 78, 20);
@@ -65,34 +67,49 @@ X1LEAudioProcessorEditor::X1LEAudioProcessorEditor(X1LEAudioProcessor& p)
         attachments[i] = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(p.parameters, ids[i], s);
     }
     for (int i : { 0, 3, 4, 8 }) controls[i].setTextValueSuffix(" dB");
-    for (int i : { 1, 2, 5, 6, 7, 10, 11, 12 }) {
+    for (int i : { 1, 2, 5, 6, 7, 10, 11, 12, 13 }) {
         controls[i].textFromValueFunction = [](double v) { return juce::String(juce::roundToInt(v * 100.0)) + " %"; };
         controls[i].valueFromTextFunction = [](const juce::String& v) { return v.getFloatValue() / 100.0; };
     }
 }
 
 void X1LEAudioProcessorEditor::applyPreset(int preset) {
-    struct Values { float input, gate, comp, presence, air, deess, drive, mix, output, lowcut, flanger, delay, reverb; };
+    struct Values { float input, gate, comp, presence, air, deess, drive, mix, output, lowcut, flanger, delay, reverb, width; };
     static const Values presets[] = {
-        { 0.0f, 0.08f, 0.30f, 2.0f, 1.5f, 0.22f, 0.04f, 1.0f, 0.0f, 85.0f, 0.00f, 0.00f, 0.04f },
-        { -2.0f, 0.05f, 0.55f, 3.8f, 2.0f, 0.30f, 0.12f, 1.0f, -1.0f, 100.0f, 0.04f, 0.10f, 0.03f },
-        { -1.0f, 0.04f, 0.42f, 2.5f, 3.0f, 0.28f, 0.05f, 1.0f, -0.5f, 90.0f, 0.16f, 0.20f, 0.28f },
-        { -1.0f, 0.06f, 0.38f, 3.0f, 3.8f, 0.35f, 0.03f, 1.0f, -1.0f, 110.0f, 0.02f, 0.08f, 0.10f },
-        { -2.0f, 0.03f, 0.25f, 1.8f, 5.0f, 0.25f, 0.02f, 1.0f, -1.0f, 120.0f, 0.08f, 0.18f, 0.24f },
-        { -3.0f, 0.10f, 0.68f, 4.0f, 1.5f, 0.38f, 0.18f, 1.0f, -2.0f, 95.0f, 0.05f, 0.06f, 0.02f },
-        { -2.0f, 0.04f, 0.45f, 3.0f, 2.5f, 0.30f, 0.07f, 1.0f, -1.0f, 100.0f, 0.48f, 0.12f, 0.10f },
-        { -2.0f, 0.03f, 0.38f, 2.2f, 3.5f, 0.26f, 0.04f, 1.0f, -1.0f, 95.0f, 0.20f, 0.34f, 0.52f },
-        { -1.0f, 0.05f, 0.42f, 2.8f, 1.8f, 0.26f, 0.05f, 1.0f, -0.5f, 145.0f, 0.00f, 0.08f, 0.08f }
+        { 0.0f, 0.08f, 0.30f, 2.0f, 1.5f, 0.22f, 0.04f, 1.0f, 0.0f, 85.0f, 0.00f, 0.00f, 0.04f, 0.50f },
+        { -2.0f, 0.05f, 0.55f, 3.8f, 2.0f, 0.30f, 0.12f, 1.0f, -1.0f, 100.0f, 0.04f, 0.10f, 0.03f, 0.54f },
+        { -1.0f, 0.04f, 0.42f, 2.5f, 3.0f, 0.28f, 0.05f, 1.0f, -0.5f, 90.0f, 0.16f, 0.20f, 0.28f, 0.62f },
+        { -1.0f, 0.06f, 0.38f, 3.0f, 3.8f, 0.35f, 0.03f, 1.0f, -1.0f, 110.0f, 0.02f, 0.08f, 0.10f, 0.60f },
+        { -2.0f, 0.03f, 0.25f, 1.8f, 5.0f, 0.25f, 0.02f, 1.0f, -1.0f, 120.0f, 0.08f, 0.18f, 0.24f, 0.68f },
+        { -3.0f, 0.10f, 0.68f, 4.0f, 1.5f, 0.38f, 0.18f, 1.0f, -2.0f, 95.0f, 0.05f, 0.06f, 0.02f, 0.52f },
+        { -2.0f, 0.04f, 0.45f, 3.0f, 2.5f, 0.30f, 0.07f, 1.0f, -1.0f, 100.0f, 0.48f, 0.12f, 0.10f, 0.76f },
+        { -2.0f, 0.03f, 0.38f, 2.2f, 3.5f, 0.26f, 0.04f, 1.0f, -1.0f, 95.0f, 0.20f, 0.34f, 0.52f, 0.72f },
+        { -1.0f, 0.05f, 0.42f, 2.8f, 1.8f, 0.26f, 0.05f, 1.0f, -0.5f, 145.0f, 0.00f, 0.08f, 0.08f, 0.50f },
+        { -2.5f, 0.03f, 0.48f, 3.6f, 2.8f, 0.32f, 0.16f, 1.0f, -1.5f, 105.0f, 0.12f, 0.16f, 0.12f, 0.58f },
+        { -3.0f, 0.04f, 0.58f, 4.4f, 1.7f, 0.36f, 0.22f, 1.0f, -2.0f, 110.0f, 0.04f, 0.12f, 0.08f, 0.52f },
+        { -2.0f, 0.02f, 0.38f, 2.6f, 3.1f, 0.28f, 0.08f, 1.0f, -1.0f, 100.0f, 0.30f, 0.22f, 0.20f, 0.82f },
+        { -1.5f, 0.02f, 0.38f, 3.6f, 4.2f, 0.30f, 0.07f, 1.0f, -1.0f, 100.0f, 0.10f, 0.24f, 0.24f, 0.72f },
+        { -1.0f, 0.03f, 0.44f, 4.2f, 4.6f, 0.34f, 0.05f, 1.0f, -1.5f, 115.0f, 0.08f, 0.14f, 0.16f, 0.66f },
+        { -1.5f, 0.02f, 0.30f, 2.4f, 5.2f, 0.25f, 0.03f, 1.0f, -1.0f, 90.0f, 0.14f, 0.30f, 0.32f, 0.74f },
+        { -3.0f, 0.04f, 0.52f, 3.0f, 1.8f, 0.34f, 0.32f, 1.0f, -2.0f, 105.0f, 0.00f, 0.08f, 0.04f, 0.50f },
+        { -3.0f, 0.03f, 0.60f, 3.4f, 2.0f, 0.34f, 0.42f, 1.0f, -2.5f, 110.0f, 0.02f, 0.10f, 0.06f, 0.52f },
+        { -2.0f, 0.03f, 0.40f, 3.5f, 3.0f, 0.30f, 0.10f, 1.0f, -1.0f, 105.0f, 0.40f, 0.12f, 0.12f, 0.84f },
+        { -1.5f, 0.02f, 0.32f, 2.2f, 4.2f, 0.24f, 0.03f, 1.0f, -1.0f, 85.0f, 0.22f, 0.32f, 0.42f, 0.78f },
+        { -3.0f, 0.04f, 0.44f, 2.0f, 2.4f, 0.30f, 0.28f, 1.0f, -2.0f, 120.0f, 0.08f, 0.10f, 0.10f, 0.56f },
+        { -2.0f, 0.02f, 0.36f, 2.8f, 3.4f, 0.28f, 0.06f, 1.0f, -1.0f, 100.0f, 0.18f, 0.18f, 0.20f, 0.90f },
+        { -1.0f, 0.02f, 0.32f, 2.6f, 2.0f, 0.24f, 0.02f, 1.0f, -0.5f, 90.0f, 0.00f, 0.02f, 0.00f, 0.50f },
+        { -2.0f, 0.02f, 0.30f, 2.0f, 3.0f, 0.22f, 0.03f, 1.0f, -1.0f, 95.0f, 0.06f, 0.40f, 0.68f, 0.76f },
+        { -2.0f, 0.03f, 0.62f, 2.8f, 2.5f, 0.30f, 0.10f, 1.0f, -1.5f, 100.0f, 0.04f, 0.10f, 0.14f, 0.56f }
     };
-    const auto& v = presets[juce::jlimit(0, 8, preset - 1)];
+    const auto& v = presets[juce::jlimit(0, 23, preset - 1)];
     const float values[] = { v.input, v.gate, v.comp, v.presence, v.air, v.deess, v.drive, v.mix, v.output };
     for (int i = 0; i < 9; ++i) {
         if (auto* param = audioProcessor.parameters.getParameter(ids[i]))
             param->setValueNotifyingHost(param->convertTo0to1(values[i]));
     }
-    const char* fxIds[] = { "lowcut", "flanger", "delay", "reverb" };
-    const float fxValues[] = { v.lowcut, v.flanger, v.delay, v.reverb };
-    for (int i = 0; i < 4; ++i)
+    const char* fxIds[] = { "lowcut", "flanger", "delay", "reverb", "width" };
+    const float fxValues[] = { v.lowcut, v.flanger, v.delay, v.reverb, v.width };
+    for (int i = 0; i < 5; ++i)
         if (auto* param = audioProcessor.parameters.getParameter(fxIds[i]))
             param->setValueNotifyingHost(param->convertTo0to1(fxValues[i]));
 }
@@ -154,16 +171,16 @@ void X1LEAudioProcessorEditor::paint(juce::Graphics& g) {
     g.setColour(cyan.withAlpha(0.75f));
     g.setFont(juce::Font(juce::FontOptions(10.0f, juce::Font::bold)));
     g.drawText("SPACE  /  MODULATION", 26, 604, 240, 16, juce::Justification::centredLeft);
-    for (int i = 0; i < 4; ++i) {
+    for (int i = 0; i < 5; ++i) {
         auto r = fxBounds(i, getWidth());
         g.setColour(panel.withAlpha(0.98f)); g.fillRoundedRectangle(r, 15.0f);
         g.setColour(border); g.drawRoundedRectangle(r, 15.0f, 1.0f);
         const auto accent = i % 2 == 0 ? purple : cyan;
         g.setColour(accent.withAlpha(0.9f)); g.fillRoundedRectangle(r.getX()+1, r.getY()+15, 3, 38, 1.5f);
         g.setColour(white); g.setFont(juce::Font(juce::FontOptions(11.0f, juce::Font::bold)));
-        g.drawText(names[9+i], juce::Rectangle<int>((int)r.getX()+15,(int)r.getY()+16,(int)r.getWidth()-25,20), juce::Justification::centredLeft, true);
+        g.drawText(names[9+i], juce::Rectangle<int>((int)r.getX()+12,(int)r.getY()+16,(int)r.getWidth()-20,20), juce::Justification::centredLeft, true);
         g.setColour(muted); g.setFont(juce::Font(juce::FontOptions(9.5f)));
-        g.drawFittedText(descriptions[9+i], juce::Rectangle<int>((int)r.getX()+15,(int)r.getY()+43,(int)r.getWidth()-25,35), juce::Justification::topLeft, 3, 1.0f);
+        g.drawFittedText(descriptions[9+i], juce::Rectangle<int>((int)r.getX()+12,(int)r.getY()+43,(int)r.getWidth()-20,35), juce::Justification::topLeft, 3, 1.0f);
     }
     g.setColour(muted); g.setFont(juce::Font(juce::FontOptions(10.0f)));
     g.drawText("START WITH A PRESET, THEN ADJUST BY EAR. KEEP INPUT AND OUTPUT LEVELS UNDER CONTROL.",
@@ -177,8 +194,8 @@ void X1LEAudioProcessorEditor::resized() {
         const auto r=moduleBounds(i,getWidth());
         controls[i].setBounds((int)(r.getRight()-126.0f),(int)(r.getY()+24.0f),114,116);
     }
-    for (int i=0;i<4;++i) {
+    for (int i=0;i<5;++i) {
         const auto r=fxBounds(i,getWidth());
-        controls[9+i].setBounds((int)(r.getRight()-126.0f),(int)(r.getY()+25.0f),114,116);
+        controls[9+i].setBounds((int)(r.getRight()-120.0f),(int)(r.getY()+25.0f),108,116);
     }
 }

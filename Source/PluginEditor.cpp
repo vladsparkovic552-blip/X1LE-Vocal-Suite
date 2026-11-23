@@ -51,11 +51,14 @@ X1LEAudioProcessorEditor::X1LEAudioProcessorEditor(X1LEAudioProcessor& p)
     controls[3].setTextValueSuffix(" dB");
     controls[4].setTextValueSuffix(" dB");
     controls[8].setTextValueSuffix(" dB");
-    controls[1].setTextValueSuffix(" %");
-    controls[2].setTextValueSuffix(" %");
-    controls[5].setTextValueSuffix(" %");
-    controls[6].setTextValueSuffix(" %");
-    controls[7].setTextValueSuffix(" %");
+    for (int index : { 1, 2, 5, 6, 7 }) {
+        controls[index].textFromValueFunction = [](double value) {
+            return juce::String(juce::roundToInt(value * 100.0)) + " %";
+        };
+        controls[index].valueFromTextFunction = [](const juce::String& value) {
+            return value.getFloatValue() / 100.0;
+        };
+    }
 }
 
 void X1LEAudioProcessorEditor::drawModuleIcon(juce::Graphics& g, juce::Rectangle<float> area, int index) {
@@ -63,7 +66,6 @@ void X1LEAudioProcessorEditor::drawModuleIcon(juce::Graphics& g, juce::Rectangle
     g.setColour(c.withAlpha(0.13f));
     g.fillRoundedRectangle(area, 9.0f);
     g.setColour(c);
-    g.setStrokeFill(juce::FillType(c));
     const float x = area.getX(), y = area.getY(), w = area.getWidth(), h = area.getHeight();
     const float cx = area.getCentreX(), cy = area.getCentreY();
 

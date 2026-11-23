@@ -3,7 +3,7 @@
 #endif
 
 [Setup]
-AppId={{A3B5C9D1-8A21-4E2D-9F70-X1LEVOCALSUITE}}
+AppId={{A3B5C9D1-8A21-4E2D-9F70-51E1A1C0B123}}
 AppName=X1LE Vocal Suite
 AppVersion=1.0.0
 AppPublisher=X1LE
@@ -18,7 +18,7 @@ PrivilegesRequired=admin
 WizardStyle=modern
 
 [Files]
-Source: "{#PluginSource}\*"; DestDir: "{commoncf}\VST3\X1LE Vocal Suite.vst3"; Flags: recursesubdirs createallsubdirs ignoreversion
+Source: "{#PluginSource}\\*"; DestDir: "{commoncf}\\VST3\\X1LE Vocal Suite.vst3"; Flags: recursesubdirs createallsubdirs ignoreversion
 
 [Code]
 function InitializeSetup(): Boolean;

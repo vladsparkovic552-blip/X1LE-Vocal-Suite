@@ -8,12 +8,12 @@ public:
     void resized() override;
 private:
     X1LEAudioProcessor& audioProcessor;
-    juce::Slider controls[13];
-    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> attachments[13];
+    juce::Slider controls[14];
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> attachments[14];
     juce::ComboBox presetBox;
     juce::Label presetLabel;
-    const char* ids[13] = { "input", "gate", "comp", "presence", "air", "deess", "drive", "mix", "output", "lowcut", "flanger", "delay", "reverb" };
-    const char* names[13] = { "INPUT GAIN", "GATE", "COMPRESSION", "PRESENCE", "AIR", "DE-ESSER", "DRIVE", "MIX", "OUTPUT", "LOW CUT", "FLANGER", "DELAY", "REVERB" };
+    const char* ids[14] = { "input", "gate", "comp", "presence", "air", "deess", "drive", "mix", "output", "lowcut", "flanger", "delay", "reverb", "width" };
+    const char* names[14] = { "INPUT GAIN", "GATE", "COMPRESSION", "PRESENCE", "AIR", "DE-ESSER", "DRIVE", "MIX", "OUTPUT", "LOW CUT", "FLANGER", "DELAY", "REVERB", "STEREO WIDTH" };
     const char* descriptions[13] = {
         "Set a healthy input level. Avoid clipping.",
         "Controls quiet gaps. Keep word endings natural.",
@@ -27,7 +27,8 @@ private:
         "Removes unnecessary low-frequency rumble.",
         "Adds moving, modulated stereo character.",
         "Adds rhythmic echo to vocal phrases.",
-        "Adds room and tail ambience."
+        "Adds room and tail ambience.",
+        "Controls stereo spread. Keep the lead vocal centered."
     };
     void applyPreset(int preset);
     void drawModuleIcon(juce::Graphics&, juce::Rectangle<float>, int);

@@ -1,6 +1,7 @@
 #pragma once
 #include <JuceHeader.h>
 #include <array>
+#include <vector>
 
 class X1LEAudioProcessor : public juce::AudioProcessor {
 public:
@@ -30,5 +31,10 @@ private:
     std::array<float, 2> compEnvelope { 0.0f, 0.0f };
     std::array<float, 2> essEnvelope { 0.0f, 0.0f };
     float gateEnvelope = 0.0f;
+    std::array<float, 2> gateGain { 1.0f, 1.0f };
+    std::array<std::vector<float>, 2> flangeBuffer, delayBuffer;
+    int flangeWrite = 0, delayWrite = 0;
+    double flangePhase = 0.0;
+    float currentLowCut = 85.0f;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(X1LEAudioProcessor)
 };

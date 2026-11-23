@@ -45,8 +45,9 @@ void X1LEAudioProcessor::prepareToPlay(double sr, int) {
     flangeBuffer[0].assign(4096, 0.0f); flangeBuffer[1].assign(4096, 0.0f);
     const auto delaySamples = static_cast<size_t>(sr * 0.7);
     delayBuffer[0].assign(delaySamples, 0.0f); delayBuffer[1].assign(delaySamples, 0.0f);
-    flangeWrite = delayWrite = 0;
-    flangePhase = 0.0;
+    flangeWrite = { 0, 0 };
+    delayWrite = { 0, 0 };
+    flangePhase = { 0.0, 0.0 };
     currentLowCut = 85.0f;
     reverb.prepare(spec);
     reverb.reset();
@@ -150,11 +151,11 @@ void X1LEAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::Mi
             if (magnitude > 0.97f)
                 result = std::copysign(0.97f + 0.03f * std::tanh((magnitude - 0.97f) * 8.0f), result);
             data[i] = result;
-            flangeWrite = (flangeWrite + 1) % static_cast<int>(flangeBuffer[c].size());
-            delayWrite = (delayWrite + 1) % static_cast<int>(delayBuffer[c].size());
-            flangePhase += 0.00022;
-            if (flangePhase > juce::MathConstants<double>::twoPi)
-                flangePhase -= juce::MathConstants<double>::twoPi;
+            flangeWrite[c] = (flangeWrite[c] + 1) % static_cast<int>(flangeBuffer[c].size());
+            delayWrite[c] = (delayWrite[c] + 1) % static_cast<int>(delayBuffer[c].size());
+            flangePhase[c] += 0.00022;
+            if (flangePhase[c] > juce::MathConstants<double>::twoPi)
+                flangePhase[c] -= juce::MathConstants<double>::twoPi;
         }
     }
     if (reverbAmount > 0.001f && buffer.getNumChannels() >= 2) {

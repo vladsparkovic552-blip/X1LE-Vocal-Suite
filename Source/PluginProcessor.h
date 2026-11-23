@@ -1,5 +1,6 @@
 #pragma once
 #include <JuceHeader.h>
+#include <array>
 
 class X1LEAudioProcessor : public juce::AudioProcessor {
 public:
@@ -25,7 +26,9 @@ public:
     juce::AudioProcessorValueTreeState parameters;
 private:
     juce::AudioProcessorValueTreeState::ParameterLayout createParameters();
-    float envelope = 0.0f;
-    juce::dsp::IIR::Filter<float> lowCutL, lowCutR, presenceL, presenceR;
+    std::array<juce::dsp::IIR::Filter<float>, 2> highPass, presence, airShelf, essHighPass, essLowPass;
+    std::array<float, 2> compEnvelope { 0.0f, 0.0f };
+    std::array<float, 2> essEnvelope { 0.0f, 0.0f };
+    float gateEnvelope = 0.0f;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(X1LEAudioProcessor)
 };

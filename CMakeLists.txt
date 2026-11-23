@@ -22,6 +22,8 @@ juce_add_plugin(X1LE_Vocal_Suite
   EDITOR_WANTS_KEYBOARD_FOCUS FALSE
   COPY_PLUGIN_AFTER_BUILD FALSE)
 
+juce_generate_juce_header(X1LE_Vocal_Suite)
+
 target_sources(X1LE_Vocal_Suite PRIVATE
   Source/PluginProcessor.cpp
   Source/PluginEditor.cpp)

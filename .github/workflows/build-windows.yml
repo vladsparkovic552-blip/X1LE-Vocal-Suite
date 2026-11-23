@@ -1,0 +1,48 @@
+name: Build X1LE Vocal Suite
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-2022
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure CMake
+        run: cmake -S . -B build -A x64
+
+      - name: Build VST3
+        run: cmake --build build --config Release --target X1LE_Vocal_Suite_VST3
+
+      - name: Locate plugin
+        shell: pwsh
+        run: |
+          $plugin = Get-ChildItem -Path build -Filter "X1LE Vocal Suite.vst3" -Directory -Recurse | Select-Object -First 1
+          if (-not $plugin) { throw "VST3 bundle not found" }
+          "PLUGIN_SOURCE=$($plugin.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append
+          New-Item -ItemType Directory -Force -Path package | Out-Null
+          Copy-Item $plugin.FullName package -Recurse
+
+      - name: Install Inno Setup
+        run: choco install innosetup --yes --no-progress
+
+      - name: Build installer
+        shell: pwsh
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DPluginSource="$env:PLUGIN_SOURCE" installer.iss
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: X1LE-Vocal-Suite-Setup
+          path: Output/X1LE_Vocal_Suite_Setup.exe
+          if-no-files-found: error
+          retention-days: 30

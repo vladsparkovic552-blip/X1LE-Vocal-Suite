@@ -12,6 +12,12 @@ namespace {
         return { margin + (index % 3) * (cardW + gap),
                  132.0f + (index / 3) * (cardH + 13.0f), cardW, cardH };
     }
+
+    juce::Rectangle<float> fxBounds(int index, int width) {
+        const float margin = 24.0f, gap = 14.0f;
+        const float cardW = (static_cast<float>(width) - margin * 2.0f - gap * 3.0f) / 4.0f;
+        return { margin + index * (cardW + gap), 622.0f, cardW, 148.0f };
+    }
 }
 
 X1LEAudioProcessorEditor::X1LEAudioProcessorEditor(X1LEAudioProcessor& p)
@@ -59,7 +65,7 @@ X1LEAudioProcessorEditor::X1LEAudioProcessorEditor(X1LEAudioProcessor& p)
         attachments[i] = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(p.parameters, ids[i], s);
     }
     for (int i : { 0, 3, 4, 8 }) controls[i].setTextValueSuffix(" dB");
-    for (int i : { 1, 2, 5, 6, 7 }) {
+    for (int i : { 1, 2, 5, 6, 7, 10, 11, 12 }) {
         controls[i].textFromValueFunction = [](double v) { return juce::String(juce::roundToInt(v * 100.0)) + " %"; };
         controls[i].valueFromTextFunction = [](const juce::String& v) { return v.getFloatValue() / 100.0; };
     }
@@ -145,6 +151,20 @@ void X1LEAudioProcessorEditor::paint(juce::Graphics& g) {
         g.setColour(muted); g.setFont(juce::Font(juce::FontOptions(9.5f)));
         g.drawFittedText(descriptions[i],juce::Rectangle<int>((int)r.getX()+15,(int)r.getY()+65,132,70),juce::Justification::topLeft,4,1.0f);
     }
+    g.setColour(cyan.withAlpha(0.75f));
+    g.setFont(juce::Font(juce::FontOptions(10.0f, juce::Font::bold)));
+    g.drawText("SPACE  /  MODULATION", 26, 604, 240, 16, juce::Justification::centredLeft);
+    for (int i = 0; i < 4; ++i) {
+        auto r = fxBounds(i, getWidth());
+        g.setColour(panel.withAlpha(0.98f)); g.fillRoundedRectangle(r, 15.0f);
+        g.setColour(border); g.drawRoundedRectangle(r, 15.0f, 1.0f);
+        const auto accent = i % 2 == 0 ? purple : cyan;
+        g.setColour(accent.withAlpha(0.9f)); g.fillRoundedRectangle(r.getX()+1, r.getY()+15, 3, 38, 1.5f);
+        g.setColour(white); g.setFont(juce::Font(juce::FontOptions(11.0f, juce::Font::bold)));
+        g.drawText(names[9+i], juce::Rectangle<int>((int)r.getX()+15,(int)r.getY()+16,(int)r.getWidth()-25,20), juce::Justification::centredLeft, true);
+        g.setColour(muted); g.setFont(juce::Font(juce::FontOptions(9.5f)));
+        g.drawFittedText(descriptions[9+i], juce::Rectangle<int>((int)r.getX()+15,(int)r.getY()+43,(int)r.getWidth()-25,35), juce::Justification::topLeft, 3, 1.0f);
+    }
     g.setColour(muted); g.setFont(juce::Font(juce::FontOptions(10.0f)));
     g.drawText("START WITH A PRESET, THEN ADJUST BY EAR. KEEP INPUT AND OUTPUT LEVELS UNDER CONTROL.",
                25,getHeight()-25,getWidth()-50,16,juce::Justification::centredLeft);
@@ -156,5 +176,9 @@ void X1LEAudioProcessorEditor::resized() {
     for (int i=0;i<9;++i) {
         const auto r=moduleBounds(i,getWidth());
         controls[i].setBounds((int)(r.getRight()-126.0f),(int)(r.getY()+24.0f),114,116);
+    }
+    for (int i=0;i<4;++i) {
+        const auto r=fxBounds(i,getWidth());
+        controls[9+i].setBounds((int)(r.getRight()-126.0f),(int)(r.getY()+25.0f),114,116);
     }
 }

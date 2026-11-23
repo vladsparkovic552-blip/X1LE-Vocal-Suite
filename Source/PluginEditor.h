@@ -23,9 +23,14 @@ private:
         "Tames sharp S and SH sounds.",
         "Adds harmonics and gentle saturation.",
         "Balances the processed and dry signal.",
-        "Final output level. Keep peaks below clipping.",\n        "Removes unnecessary low-frequency rumble.",\n        "Adds moving, modulated stereo character.",\n        "Adds rhythmic echo to vocal phrases.",\n        "Adds room and tail ambience."
+        "Final output level. Keep peaks below clipping.",
+        "Removes unnecessary low-frequency rumble.",
+        "Adds moving, modulated stereo character.",
+        "Adds rhythmic echo to vocal phrases.",
+        "Adds room and tail ambience."
     };
     void applyPreset(int preset);
-    void drawModuleIcon(juce::Graphics&, juce::Rectangle<float>, int);\n    juce::Rectangle<float> fxBounds(int index, int width);
+    void drawModuleIcon(juce::Graphics&, juce::Rectangle<float>, int);
+    juce::Rectangle<float> fxBounds(int index, int width);
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(X1LEAudioProcessorEditor)
 };

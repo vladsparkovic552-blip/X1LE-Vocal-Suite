@@ -48,6 +48,7 @@ void X1LEAudioProcessor::prepareToPlay(double sr, int) {
     flangeWrite = delayWrite = 0;
     flangePhase = 0.0;
     currentLowCut = 85.0f;
+    reverb.reset();
 }
 
 void X1LEAudioProcessor::releaseResources() {}
@@ -122,10 +123,10 @@ void X1LEAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::Mi
                 y = y * (1.0f - drive * 0.32f) + driven * (drive * 0.32f);
             }
 
-            const float gateCoeff = gateTarget < gateGain[c]
+            const float gateGainCoeff = gateTarget < gateGain[c]
                 ? std::exp(-1.0f / (0.012f * static_cast<float>(getSampleRate())))
                 : std::exp(-1.0f / (0.180f * static_cast<float>(getSampleRate())));
-            gateGain[c] = gateCoeff * gateGain[c] + (1.0f - gateCoeff) * gateTarget;
+            gateGain[c] = gateGainCoeff * gateGain[c] + (1.0f - gateGainCoeff) * gateTarget;
             y *= gateGain[c];
 
             const int fSize = static_cast<int>(flangeBuffer[c].size());

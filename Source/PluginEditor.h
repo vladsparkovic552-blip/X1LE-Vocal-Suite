@@ -14,7 +14,7 @@ private:
     juce::Label presetLabel;
     const char* ids[14] = { "input", "gate", "comp", "presence", "air", "deess", "drive", "mix", "output", "lowcut", "flanger", "delay", "reverb", "width" };
     const char* names[14] = { "INPUT GAIN", "GATE", "COMPRESSION", "PRESENCE", "AIR", "DE-ESSER", "DRIVE", "MIX", "OUTPUT", "LOW CUT", "FLANGER", "DELAY", "REVERB", "STEREO WIDTH" };
-    const char* descriptions[13] = {
+    const char* descriptions[14] = {
         "Set a healthy input level. Avoid clipping.",
         "Controls quiet gaps. Keep word endings natural.",
         "Smooths loud and quiet vocal phrases.",

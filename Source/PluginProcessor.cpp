@@ -36,15 +36,15 @@ void X1LEAudioProcessor::releaseResources() {}
 void X1LEAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer&) {
     juce::ScopedNoDenormals noDenormals;
     const int channels = juce::jmin(2, buffer.getNumChannels());
-    const float in = juce::Decibels::decibelsToGain(*parameters.getRawParameterValue("input"));
-    const float out = juce::Decibels::decibelsToGain(*parameters.getRawParameterValue("output"));
-    const float gate = *parameters.getRawParameterValue("gate");
-    const float comp = *parameters.getRawParameterValue("comp");
-    const float drive = *parameters.getRawParameterValue("drive");
-    const float mix = *parameters.getRawParameterValue("mix");
-    const float air = *parameters.getRawParameterValue("air") / 12.0f;
-    const float presence = *parameters.getRawParameterValue("presence") / 12.0f;
-    const float deess = *parameters.getRawParameterValue("deess");
+    const float in = juce::Decibels::decibelsToGain(parameters.getRawParameterValue("input")->load());
+    const float out = juce::Decibels::decibelsToGain(parameters.getRawParameterValue("output")->load());
+    const float gate = parameters.getRawParameterValue("gate")->load();
+    const float comp = parameters.getRawParameterValue("comp")->load();
+    const float drive = parameters.getRawParameterValue("drive")->load();
+    const float mix = parameters.getRawParameterValue("mix")->load();
+    const float air = parameters.getRawParameterValue("air")->load() / 12.0f;
+    const float presence = parameters.getRawParameterValue("presence")->load() / 12.0f;
+    const float deess = parameters.getRawParameterValue("deess")->load();
     for (int c=0;c<channels;++c) {
         auto* x = buffer.getWritePointer(c);
         auto& hp = c==0 ? lowCutL : lowCutR;

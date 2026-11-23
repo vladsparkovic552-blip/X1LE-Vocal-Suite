@@ -131,18 +131,18 @@ void X1LEAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::Mi
             y *= gateGain[c];
 
             const int fSize = static_cast<int>(flangeBuffer[c].size());
-            const float lfo = 0.5f + 0.5f * std::sin(static_cast<float>(flangePhase));
+            const float lfo = 0.5f + 0.5f * std::sin(static_cast<float>(flangePhase[c]));
             const int fDelay = juce::jlimit(1, fSize - 2, 80 + static_cast<int>(lfo * 300.0f));
-            const int fRead = (flangeWrite - fDelay + fSize) % fSize;
+            const int fRead = (flangeWrite[c] - fDelay + fSize) % fSize;
             const float fSample = flangeBuffer[c][static_cast<size_t>(fRead)];
-            flangeBuffer[c][static_cast<size_t>(flangeWrite)] = y;
+            flangeBuffer[c][static_cast<size_t>(flangeWrite[c])] = y;
             y += fSample * flanger * 0.38f;
 
             const int dSize = static_cast<int>(delayBuffer[c].size());
             const int dDelay = juce::jlimit(1, dSize - 2, static_cast<int>(getSampleRate() * 0.23));
-            const int dRead = (delayWrite - dDelay + dSize) % dSize;
+            const int dRead = (delayWrite[c] - dDelay + dSize) % dSize;
             const float dSample = delayBuffer[c][static_cast<size_t>(dRead)];
-            delayBuffer[c][static_cast<size_t>(delayWrite)] = y + dSample * 0.25f;
+            delayBuffer[c][static_cast<size_t>(delayWrite[c])] = y + dSample * 0.25f;
             y += dSample * delay * 0.35f;
             const float wet = y;
             float result = (dry * (1.0f - mix) + wet * mix) * outputGain;

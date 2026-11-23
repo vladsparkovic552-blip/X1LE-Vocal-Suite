@@ -26,10 +26,10 @@ juce::AudioProcessorValueTreeState::ParameterLayout X1LEAudioProcessor::createPa
 void X1LEAudioProcessor::prepareToPlay(double sr, int) {
     juce::dsp::ProcessSpec spec{sr, 512, (juce::uint32)getTotalNumOutputChannels()};
     lowCutL.prepare(spec); lowCutR.prepare(spec); presenceL.prepare(spec); presenceR.prepare(spec);
-    auto hp = juce::dsp::IIR::Coefficients<float>::makeHighPass(sr, 85.0);
-    *lowCutL.coefficients = *hp; *lowCutR.coefficients = *hp;
-    auto peak = juce::dsp::IIR::Coefficients<float>::makePeakFilter(sr, 3200.0, 0.8f, 1.25f);
-    *presenceL.coefficients = *peak; *presenceR.coefficients = *peak;
+    lowCutL.coefficients = juce::dsp::IIR::Coefficients<float>::makeHighPass(sr, 85.0);
+    lowCutR.coefficients = juce::dsp::IIR::Coefficients<float>::makeHighPass(sr, 85.0);
+    presenceL.coefficients = juce::dsp::IIR::Coefficients<float>::makePeakFilter(sr, 3200.0, 0.8f, 1.25f);
+    presenceR.coefficients = juce::dsp::IIR::Coefficients<float>::makePeakFilter(sr, 3200.0, 0.8f, 1.25f);
     envelope = 0.0f;
 }
 void X1LEAudioProcessor::releaseResources() {}
@@ -50,17 +50,17 @@ void X1LEAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::Mi
         auto& hp = c==0 ? lowCutL : lowCutR;
         auto& pr = c==0 ? presenceL : presenceR;
         for (int i=0;i<buffer.getNumSamples();++i) {
-            float dry = x[i];
+            const float dry = x[i];
             float y = hp.processSample(dry * in);
             y = pr.processSample(y);
-            float a = std::abs(y);
+            const float a = std::abs(y);
             envelope = 0.995f * envelope + 0.005f * a;
-            float gateGain = envelope < gate * 0.10f ? 0.35f : 1.0f;
-            float compressed = y / (1.0f + comp * std::max(0.0f, std::abs(y) - 0.22f) * 5.0f);
-            float shaped = std::tanh(compressed * (1.0f + drive * 3.0f));
+            const float gateGain = envelope < gate * 0.10f ? 0.35f : 1.0f;
+            const float compressed = y / (1.0f + comp * std::max(0.0f, std::abs(y) - 0.22f) * 5.0f);
+            const float shaped = std::tanh(compressed * (1.0f + drive * 3.0f));
             float bright = shaped * (1.0f + presence * 0.12f + air * 0.08f);
             bright *= (1.0f - deess * juce::jlimit(0.0f,0.45f,(a-0.45f)*0.4f));
-            float wet = bright * gateGain;
+            const float wet = bright * gateGain;
             x[i] = (dry * (1.0f-mix) + wet * mix) * out;
         }
     }

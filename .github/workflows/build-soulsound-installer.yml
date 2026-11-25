@@ -1,0 +1,37 @@
+name: Build SoulSound Installer
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'SoulSoundInstaller/**'
+      - '.github/workflows/build-soulsound-installer.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-installer:
+    runs-on: windows-2022
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Inno Setup
+        run: choco install innosetup --yes --no-progress
+
+      - name: Compile SoulSound setup
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path SoulSoundInstaller/Output | Out-Null
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "SoulSoundInstaller/SoulSoundSetup.iss"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SoulSound-Setup-2.9.0
+          path: SoulSoundInstaller/Output/SoulSound_Setup_2.9.0.exe
+          if-no-files-found: error
+          retention-days: 30
